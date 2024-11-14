@@ -3,9 +3,9 @@ namespace MusicApi.Models
 {
     public class Artists_Songs
     {
-        [Key]
+         [Key]
         public int Id { get; set; }
-        [Required]
+         [Required]
         public int Song_Id { get; set; }
         [Required]
         public int Artist_Id { get; set; }
