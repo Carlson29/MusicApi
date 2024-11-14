@@ -1,8 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using MusicApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddDbContext<ArtistsContext>(opt=> opt.UseInMemoryDatabase("CommentList"));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
