@@ -15,28 +15,47 @@ namespace MusicApi.Models
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-                /*modelBuilder.Entity<Movie>().HasData(
-                    new Movie()
-                    {
-                        id = 1,
-                        title = "boys in the hood",
-                        description = "friends living life",
-                        directorId = 1
+            modelBuilder.Entity<Artists>().HasData(
+                new Artists()
+                {
+                    Artist_Id = 1,
+                    Artist_Name = "Xjj",
+                    Bio = "living life",
+                    DateOfBirth = new DateTime(2000, 7, 22)
 
-                    });
-                modelBuilder.Entity<Director>().HasData(
-                   new Director()
+                });
+                modelBuilder.Entity<Songs>().HasData(
+                   new Songs()
                    {
-                       id = 1,
-                       name = "carl",
-                       dateOfBirth = new DateTime(2000, 7, 23)
+                       Song_Id= 1,
+                       Title = "carl",
+                       Genre ="Rap",
+                       Duration = new TimeSpan(0, 2,45),
+                       ReleaseDate = new DateTime(2000, 7, 23)
 
                    }
-                    );*/
-                base.OnModelCreating(modelBuilder);
+                    );
+            modelBuilder.Entity<Artists_Songs>().HasData(
+                   new Artists_Songs()
+                   {
+                       Id = 1,
+                       Song_Id = 1, 
+                       Artist_Id= 1
+
+                   }
+                    );
+            modelBuilder.Entity<Users>().HasData(
+                   new Users()
+                   {
+                       User_Id = 1,
+                       Password = "14567Lp/"
+
+                   }
+                    );
+            base.OnModelCreating(modelBuilder);
             }
 
         }
 
     }
-}
+
