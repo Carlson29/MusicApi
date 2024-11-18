@@ -9,7 +9,6 @@ namespace MusicApi.Models
          [Required]
         public string User_Name { get; set; }
          [Required]
-         [DataType(DataType.Password)]
         public string Password { get; set; }
     }
 }
