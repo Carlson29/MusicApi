@@ -62,6 +62,59 @@ public class Artists_SongsControllerTests
         Assert.IsType<NotFoundResult>(result.Result);
     }
 
-   
+    public async Task PostArtists_Songs_ShouldAddItem()
+    {
+        var newArtistsSong = new Artists_Songs { Id = 3, Artist_Id = 3, Song_Id = 3 };
+        _mockDbset.Setup(m => m.Add(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(_data.Add);
+
+        var result = await _controller.PostArtists_Songs(newArtistsSong);
+
+        var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
+        var item = Assert.IsType<Artists_Songs>(createdResult.Value);
+        Assert.Equal(3, item.Id);
+    }
+
+    public async Task PutArtists_Songs_UpdateItem()
+    {
+        var updatedArtistsSong = new Artists_Songs { Id = 1, Artist_Id = 10, Song_Id = 10 };
+        _mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
+
+        var result = await _controller.PutArtists_Songs(1, updatedArtistsSong);
+
+        Assert.IsType<NoContentResult>(result);
+
+    }
+
+    public async Task PutArtists_Songs_That_Return_BadRequest()
+    {
+        var updatedArtistsSong = new Artists_Songs { Id = 1, Artist_Id = 10, Song_Id = 10 };
+
+        var result = await _controller.PutArtists_Songs(2, updatedArtistsSong);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+
+    }
+
+    public async Task DeleteArtists_Songs_andRemoveItem()
+    {
+        var artistSong = _data.First();
+        _mockDbset.Setup(m => m.FindAsync(1)).ReturnsAsync(artistSong);
+        _mockDbset.Setup(m => m.Remove(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(item => _data.Remove(item));
+
+        var result = await _controller.DeleteArtists_Songs(1);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Single(_data);
+
+    }
+
+    public async Task DeleteArtists_Songs_ReturnNotFounderror()
+    {
+        var result = await _controller.DeleteArtists_Songs(99);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
 }
 
