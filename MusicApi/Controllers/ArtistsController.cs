@@ -25,7 +25,16 @@ namespace MusicApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Artists>>> GetArtists()
         {
-            return await _context.Artists.ToListAsync();
+            var artist = await _context.Artists.Select(a =>
+            new ArtistsDto()
+            {
+                Artist_Name = a.Artist_Name,
+                Bio = a.Bio,
+                DateOfBirth = a.DateOfBirth,
+                Age = a.getAge()
+            }
+     ).ToListAsync();
+            return Ok(artist);
         }
 
         // GET: api/Artists/5
