@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 public class Artists_SongsControllerTests
-    {
+{
     private readonly Mock<ArtistsContext> _mockContext;
     private readonly Mock<DbSet<Artists_Songs>> _mockDbset;
     private readonly Artists_SongsController _controller;
@@ -29,6 +29,39 @@ public class Artists_SongsControllerTests
         _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.GetEnumerator()).Returns(_data.AsQueryable().GetEnumerator);
 
         _mockContext = new Mock<ArtistsContext>();
+        _mockContext.Setup(c => c.Artists_Songs).Returns(_mockDbset.Object);
+
+        _controller = new Artists_SongsController(_mockContext.Object);
+
     }
+
+    public async Task GetArtists_Songs_ShouldReturnAllItems()
+    {
+        var result = await _controller.GetArtists_Songs();
+
+
+        var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists_Songs>>>(result);
+        var items = Assert.IsType<List<Artists_Songs>>(actionResult.Value);
+        Assert.Equal(2, items.Count);
+    }
+
+    public async Task GetArtists_Song_ById_ShouldReturnItem()
+    {
+        var result = await _controller.GetArtists_Songs(1);
+
+        var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
+        var item = Assert.IsType<Artists_Songs>(actionResult.Value);
+        Assert.Equal(1, item.Id);
+
+    }
+
+    public async Task GetArtists_Songs_ById_ShouldReturnNotFoundExcpet()
+    {
+        var result = await _controller.GetArtists_Songs(99);
+
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+   
 }
 
