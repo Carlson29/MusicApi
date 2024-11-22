@@ -25,14 +25,26 @@ namespace MusicApi.Controllers
         // GET: api/Songs
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<Songs>>> GetSongs()
+        public async Task<ActionResult<IEnumerable<SongsDto>>> GetSongs()
         {
-            return await _context.Songs.ToListAsync();
+            var songs = await _context.Songs.Select(s=> 
+            new SongsDto()
+            {
+                Title = s.Title,
+                Genre = s.Genre,
+                Duration = s.Duration,
+                ReleaseDate = s.ReleaseDate
+            }
+
+            ).ToListAsync();
+
+            return songs;
         }
 
         // GET: api/Songs/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Songs>> GetSongs(int id)
+        [Authorize]
+        public async Task<ActionResult<SongsDto>> GetSongs(int id)
         {
             var songs = await _context.Songs.FindAsync(id);
 
@@ -41,12 +53,21 @@ namespace MusicApi.Controllers
                 return NotFound();
             }
 
-            return songs;
+            SongsDto songsDto = new SongsDto()
+            {
+                Title = songs.Title,
+                Genre = songs.Genre,
+                Duration = songs.Duration,
+                ReleaseDate = songs.ReleaseDate
+            };
+
+            return songsDto;
         }
 
         // PUT: api/Songs/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> PutSongs(int id, Songs songs)
         {
             if (id != songs.Id)
@@ -78,6 +99,7 @@ namespace MusicApi.Controllers
         // POST: api/Songs
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Songs>> PostSongs(Songs songs)
         {
             _context.Songs.Add(songs);
@@ -88,6 +110,7 @@ namespace MusicApi.Controllers
 
         // DELETE: api/Songs/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteSongs(int id)
         {
             var songs = await _context.Songs.FindAsync(id);

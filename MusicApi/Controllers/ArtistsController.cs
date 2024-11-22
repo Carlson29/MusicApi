@@ -39,7 +39,7 @@ namespace MusicApi.Controllers
 
         // GET: api/Artists/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Artists>> GetArtists(int id)
+        public async Task<ActionResult<ArtistsDto>> GetArtists(int id)
         {
             var artists = await _context.Artists.FindAsync(id);
 
@@ -47,8 +47,15 @@ namespace MusicApi.Controllers
             {
                 return NotFound();
             }
+            ArtistsDto artistsDto = new ArtistsDto()
+            {
+                Artist_Name = artists.Artist_Name,
+                Bio = artists.Bio,
+                DateOfBirth = artists.DateOfBirth,
+                Age = artists.getAge()
+            };
 
-            return artists;
+            return artistsDto;
         }
 
         // PUT: api/Artists/5
