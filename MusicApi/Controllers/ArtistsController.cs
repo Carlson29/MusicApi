@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ namespace MusicApi.Controllers
 
         // GET: api/Artists
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Artists>>> GetArtists()
         {
             var artist = await _context.Artists.Select(a =>
@@ -39,6 +41,7 @@ namespace MusicApi.Controllers
 
         // GET: api/Artists/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<ArtistsDto>> GetArtists(int id)
         {
             var artists = await _context.Artists.FindAsync(id);
@@ -61,6 +64,7 @@ namespace MusicApi.Controllers
         // PUT: api/Artists/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> PutArtists(int id, Artists artists)
         {
             if (id != artists.Id)
@@ -92,6 +96,7 @@ namespace MusicApi.Controllers
         // POST: api/Artists
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Artists>> PostArtists(Artists artists)
         {
             _context.Artists.Add(artists);
@@ -102,6 +107,7 @@ namespace MusicApi.Controllers
 
         // DELETE: api/Artists/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteArtists(int id)
         {
             var artists = await _context.Artists.FindAsync(id);
