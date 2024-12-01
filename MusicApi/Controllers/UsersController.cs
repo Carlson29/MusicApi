@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MusicApi.Models;
+using MusicApi.Service;
 
 namespace MusicApi.Controllers
 {
@@ -14,10 +16,24 @@ namespace MusicApi.Controllers
     public class UsersController : ControllerBase
     {
         private readonly ArtistsContext _context;
-
-        public UsersController(ArtistsContext context)
+        private readonly JwtService _jwtService;
+        public UsersController(ArtistsContext context, JwtService jwtService)
         {
             _context = context;
+            _jwtService = jwtService;
+        }
+
+        [HttpPost("Login")]
+        [AllowAnonymous]
+        public async Task<ActionResult<LoginResponseModel>> Login(Users request)
+        {
+            var result = await _jwtService.Authenticate(request);
+            if (result == null)
+            {
+                return Unauthorized();
+
+            }
+            return result;
         }
 
         // GET: api/Users
