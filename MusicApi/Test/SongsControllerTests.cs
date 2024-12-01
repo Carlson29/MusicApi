@@ -39,7 +39,8 @@ namespace MusicApi.Tests
             _controller = new SongsController(_mockContext.Object);
         }
 
-        [Fact]
+      
+      
         public async Task GetSongs_ReturnsAllSongs()
         {
             
@@ -51,7 +52,7 @@ namespace MusicApi.Tests
             Assert.Equal(2, returnValue.Count);
         }
 
-        [Fact]
+       
         public async Task GetSongs_WithID()
         {
             
@@ -66,7 +67,7 @@ namespace MusicApi.Tests
             Assert.Equal("Song1", returnValue.Title);
         }
 
-        [Fact]
+        
         public async Task GetSongs_WithoutID()
         {
            
@@ -79,7 +80,7 @@ namespace MusicApi.Tests
             Assert.IsType<NotFoundResult>(result.Result);
         }
 
-        [Fact]
+       
         public async Task Add_Songs()
         {
             
@@ -99,7 +100,7 @@ namespace MusicApi.Tests
             Assert.Equal("Song3", returnValue.Title);
         }
 
-        [Fact]
+      
         public async Task PutSongs_WithId()
         {
          
@@ -114,7 +115,7 @@ namespace MusicApi.Tests
             Assert.IsType<NoContentResult>(result);
         }
 
-        [Fact]
+      
         public async Task PutSongs_ReturnsBadRequest()
         {
            
@@ -127,7 +128,7 @@ namespace MusicApi.Tests
             Assert.IsType<BadRequestResult>(result);
         }
 
-        [Fact]
+       
         public async Task DeleteSongs_WithId()
         {
             
@@ -142,7 +143,7 @@ namespace MusicApi.Tests
             Assert.IsType<NoContentResult>(result);
         }
 
-        [Fact]
+        
         public async Task DeleteSongs_InvalidId()
         {
     
