@@ -1,142 +1,197 @@
-﻿using Moq;
-using Xunit;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using MusicApi.Controllers;
 using MusicApi.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+using Xunit;
 
 namespace MusicApi.Tests
 {
-    public class ArtistsControllerTests
+    public class Artists_SongsControllerTests
     {
-        private Mock<DbSet<Artists>> GetMockDbSet(IEnumerable<Artists> data)
+        private DbContextOptions<ArtistsContext> GetDbOptions()
         {
-            var queryableData = data.AsQueryable();
-
-            var mockDbSet = new Mock<DbSet<Artists>>();
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.Provider).Returns(queryableData.Provider);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.Expression).Returns(queryableData.Expression);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.ElementType).Returns(queryableData.ElementType);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.GetEnumerator()).Returns(queryableData.GetEnumerator());
-
-            return mockDbSet;
+            return new DbContextOptionsBuilder<ArtistsContext>()
+                .UseInMemoryDatabase(databaseName: "TestDatabase")
+                .Options;
         }
 
-        private Mock<ArtistsContext> GetMockContext(Mock<DbSet<Artists>> mockDbSet)
+        [Fact]
+        public async Task GetArtists_Songs_ReturnsAllItems()
         {
-            var mockContext = new Mock<ArtistsContext>();
-            mockContext.Setup(c => c.Artists).Returns(mockDbSet.Object);
-            return mockContext;
-        }
-
-      
-        public async Task GetArtists()
-        {
-            
-            var mockArtists = new List<Artists>
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
             {
-                new Artists { Id = 1, Artist_Name = "Artist1" },
-                new Artists { Id = 2, Artist_Name = "Artist2" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
+                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.Artists_Songs.Add(new Artists_Songs { Id = 2, Song_Id = 2, Artist_Id = 2 });
+                context.SaveChanges();
+            }
 
-            var controller = new ArtistsController(mockContext.Object);
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
 
-           
-            var result = await controller.GetArtists();
+                // Act
+                var result = await controller.GetArtists_Songs();
 
-            var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists>>>(result);
-            var returnValue = Assert.IsType<List<Artists>>(actionResult.Value);
-            Assert.Equal(2, returnValue.Count);
+                // Assert
+                var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists_Songs>>>(result);
+                var items = Assert.IsType<List<Artists_Songs>>(actionResult.Value);
+                Assert.Equal(2, items.Count);
+            }
         }
 
-      
-        public async Task GetArtists_InvalidId()
+        [Fact]
+        public async Task GetArtists_Songs_ById_ReturnsCorrectItem()
         {
-
-            var mockArtists = new List<Artists>
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
             {
-                new Artists { Id = 1, Artist_Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
+                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.SaveChanges();
+            }
 
-            var controller = new ArtistsController(mockContext.Object);
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
 
-            var result = await controller.GetArtists(2);
+                // Act
+                var result = await controller.GetArtists_Songs(1);
 
-            Assert.IsType<NotFoundResult>(result.Result);
+                // Assert
+                var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
+                var item = Assert.IsType<Artists_Songs>(actionResult.Value);
+                Assert.Equal(1, item.Id);
+            }
         }
 
-      
-        public async Task AddsNewArtist()
+        [Fact]
+        public async Task GetArtists_Songs_ById_ReturnsNotFound_WhenItemDoesNotExist()
         {
-            var mockArtists = new List<Artists>
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
             {
-                new Artists { Id = 1, Artist_Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            mockDbSet.Setup(m => m.Add(It.IsAny<Artists>())).Callback<Artists>(a => mockArtists.Add(a));
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
+                var controller = new Artists_SongsController(context);
 
-            var controller = new ArtistsController(mockContext.Object);
-            var newArtist = new ArtistsDto {Artist_Name = "Artist2", Bio=""};
+                // Act
+                var result = await controller.GetArtists_Songs(999);
 
-            var result = await controller.PostArtists(newArtist);
-
-            var actionResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-            var createdArtist = Assert.IsType<Artists>(actionResult.Value);
-            Assert.Equal("Artist2", createdArtist.Artist_Name);
-            Assert.Equal(2, mockArtists.Count);
+                // Assert
+                Assert.IsType<NotFoundResult>(result.Result);
+            }
         }
 
-       
-        public async Task DeleteArtists()
+        [Fact]
+        public async Task PostArtists_Songs_AddsItem()
         {
-
-            var mockArtists = new List<Artists>
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
             {
-                new Artists { Id = 1, Artist_Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            mockDbSet.Setup(m => m.FindAsync(It.IsAny<int>())).ReturnsAsync((object[] ids) => mockArtists.FirstOrDefault(a => a.Id == (int)ids[0]));
-            mockDbSet.Setup(m => m.Remove(It.IsAny<Artists>())).Callback<Artists>(a => mockArtists.Remove(a));
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
+                var controller = new Artists_SongsController(context);
+                var newItem = new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 };
 
-            var controller = new ArtistsController(mockContext.Object);
+                // Act
+                var result = await controller.PostArtists_Songs(newItem);
 
-            var result = await controller.DeleteArtists(1);
+                // Assert
+                var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
+                var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
+                var item = Assert.IsType<Artists_Songs>(createdResult.Value);
 
-
-            Assert.IsType<NoContentResult>(result);
-            Assert.Empty(mockArtists);
+                Assert.Equal(1, item.Id);
+                Assert.Equal(1, context.Artists_Songs.Count());
+            }
         }
 
-       
-        public async Task PutArtists()
+        [Fact]
+        public async Task PutArtists_Songs_UpdatesItem()
         {
-            var mockArtists = new List<Artists>
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
             {
-                new Artists { Id = 1, Artist_Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
+                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.SaveChanges();
+            }
 
-            var controller = new ArtistsController(mockContext.Object);
-            var updatedArtist = new ArtistsDto { Artist_Name = "UpdatedArtist", Bio= ""};
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
+                var updatedItem = new Artists_Songs { Id = 1, Song_Id = 2, Artist_Id = 1 };
 
-            var result = await controller.PutArtists(1, updatedArtist);
+                // Act
+                var result = await controller.PutArtists_Songs(1, updatedItem);
 
+                // Assert
+                Assert.IsType<NoContentResult>(result);
+                Assert.Equal(2, context.Artists_Songs.Find(1).Song_Id);
+            }
+        }
 
-            Assert.IsType<NoContentResult>(result);
-            Assert.Equal("UpdatedArtist", mockArtists.First().Artist_Name);
+        [Fact]
+        public async Task PutArtists_Songs_ReturnsBadRequest_WhenIdMismatch()
+        {
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
+                var updatedItem = new Artists_Songs { Id = 1, Song_Id = 2, Artist_Id = 1 };
+
+                // Act
+                var result = await controller.PutArtists_Songs(2, updatedItem);
+
+                // Assert
+                Assert.IsType<BadRequestResult>(result);
+            }
+        }
+
+        [Fact]
+        public async Task DeleteArtists_Songs_RemovesItem()
+        {
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
+            {
+                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.SaveChanges();
+            }
+
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
+
+                // Act
+                var result = await controller.DeleteArtists_Songs(1);
+
+                // Assert
+                Assert.IsType<NoContentResult>(result);
+                Assert.Equal(0, context.Artists_Songs.Count());
+            }
+        }
+
+        [Fact]
+        public async Task DeleteArtists_Songs_ReturnsNotFound_WhenItemDoesNotExist()
+        {
+            // Arrange
+            var options = GetDbOptions();
+            using (var context = new ArtistsContext(options))
+            {
+                var controller = new Artists_SongsController(context);
+
+                // Act
+                var result = await controller.DeleteArtists_Songs(999);
+
+                // Assert
+                Assert.IsType<NotFoundResult>(result);
+            }
         }
     }
 }
