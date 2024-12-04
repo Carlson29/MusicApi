@@ -18,7 +18,7 @@ namespace MusicApi.Service
             _configuration = configuration;
         }
 
-        public async Task<LoginResponseModel> Authenticate(Users request)
+        public async Task<LoginResponseModel> Authenticate(UserDto request)
         {
             if (string.IsNullOrWhiteSpace(request.User_Name) || string.IsNullOrWhiteSpace(request.Password))
             {

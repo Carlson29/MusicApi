@@ -38,8 +38,8 @@ namespace MusicApi.Tests
             
             var mockArtists = new List<Artists>
             {
-                new Artists { Id = 1, Name = "Artist1" },
-                new Artists { Id = 2, Name = "Artist2" }
+                new Artists { Id = 1, Artist_Name = "Artist1" },
+                new Artists { Id = 2, Artist_Name = "Artist2" }
             };
             var mockDbSet = GetMockDbSet(mockArtists);
             var mockContext = GetMockContext(mockDbSet);
@@ -60,7 +60,7 @@ namespace MusicApi.Tests
 
             var mockArtists = new List<Artists>
             {
-                new Artists { Id = 1, Name = "Artist1" }
+                new Artists { Id = 1, Artist_Name = "Artist1" }
             };
             var mockDbSet = GetMockDbSet(mockArtists);
             var mockContext = GetMockContext(mockDbSet);
@@ -77,7 +77,7 @@ namespace MusicApi.Tests
         {
             var mockArtists = new List<Artists>
             {
-                new Artists { Id = 1, Name = "Artist1" }
+                new Artists { Id = 1, Artist_Name = "Artist1" }
             };
             var mockDbSet = GetMockDbSet(mockArtists);
             mockDbSet.Setup(m => m.Add(It.IsAny<Artists>())).Callback<Artists>(a => mockArtists.Add(a));
@@ -85,13 +85,13 @@ namespace MusicApi.Tests
             mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
             var controller = new ArtistsController(mockContext.Object);
-            var newArtist = new Artists { Id = 2, Name = "Artist2" };
+            var newArtist = new ArtistsDto {Artist_Name = "Artist2", Bio=""};
 
             var result = await controller.PostArtists(newArtist);
 
             var actionResult = Assert.IsType<CreatedAtActionResult>(result.Result);
             var createdArtist = Assert.IsType<Artists>(actionResult.Value);
-            Assert.Equal("Artist2", createdArtist.Name);
+            Assert.Equal("Artist2", createdArtist.Artist_Name);
             Assert.Equal(2, mockArtists.Count);
         }
 
@@ -101,7 +101,7 @@ namespace MusicApi.Tests
 
             var mockArtists = new List<Artists>
             {
-                new Artists { Id = 1, Name = "Artist1" }
+                new Artists { Id = 1, Artist_Name = "Artist1" }
             };
             var mockDbSet = GetMockDbSet(mockArtists);
             mockDbSet.Setup(m => m.FindAsync(It.IsAny<int>())).ReturnsAsync((object[] ids) => mockArtists.FirstOrDefault(a => a.Id == (int)ids[0]));
@@ -123,20 +123,20 @@ namespace MusicApi.Tests
         {
             var mockArtists = new List<Artists>
             {
-                new Artists { Id = 1, Name = "Artist1" }
+                new Artists { Id = 1, Artist_Name = "Artist1" }
             };
             var mockDbSet = GetMockDbSet(mockArtists);
             var mockContext = GetMockContext(mockDbSet);
             mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
             var controller = new ArtistsController(mockContext.Object);
-            var updatedArtist = new Artists { Id = 1, Name = "UpdatedArtist" };
+            var updatedArtist = new ArtistsDto { Artist_Name = "UpdatedArtist", Bio= ""};
 
             var result = await controller.PutArtists(1, updatedArtist);
 
 
             Assert.IsType<NoContentResult>(result);
-            Assert.Equal("UpdatedArtist", mockArtists.First().Name);
+            Assert.Equal("UpdatedArtist", mockArtists.First().Artist_Name);
         }
     }
 }
