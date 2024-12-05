@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MusicApi.Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -18,7 +19,7 @@ namespace MusicApi.Service
             _configuration = configuration;
         }
 
-        public async Task<LoginResponseModel> Authenticate(UserDto request)
+        public async Task<LoginResponseModel> Authenticate(Users request)
         {
             if (string.IsNullOrWhiteSpace(request.User_Name) || string.IsNullOrWhiteSpace(request.Password))
             {
@@ -61,6 +62,11 @@ namespace MusicApi.Service
 
             }
             return null;
+        }
+
+        internal Task<ActionResult<LoginResponseModel>> Authenticate(UserDto request)
+        {
+            throw new NotImplementedException();
         }
     }
 }
