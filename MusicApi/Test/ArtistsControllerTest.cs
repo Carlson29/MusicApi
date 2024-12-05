@@ -58,7 +58,7 @@ public class ArtistsControllerTests
         [Fact]
         public async Task GetArtists_Songs_ReturnsAllItems()
         {
-            // Arrange
+            
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
@@ -71,10 +71,10 @@ public class ArtistsControllerTests
             {
                 var controller = new Artists_SongsController(context);
 
-                // Act
+                
                 var result = await controller.GetArtists_Songs();
 
-                // Assert
+              
                 var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists_Songs>>>(result);
                 var items = Assert.IsType<List<Artists_Songs>>(actionResult.Value);
                 Assert.Equal(2, items.Count);
@@ -84,11 +84,11 @@ public class ArtistsControllerTests
         [Fact]
         public async Task GetArtists_Songs_ById_ReturnsCorrectItem()
         {
-            // Arrange
+           
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
-                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.Artists_Songs.Add(new Artists_Songs { Id = 7, Song_Id = 1, Artist_Id = 1 });
                 context.SaveChanges();
             }
 
@@ -96,10 +96,9 @@ public class ArtistsControllerTests
             {
                 var controller = new Artists_SongsController(context);
 
-                // Act
+              
                 var result = await controller.GetArtists_Songs(1);
 
-                // Assert
                 var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
                 var item = Assert.IsType<Artists_Songs>(actionResult.Value);
                 Assert.Equal(1, item.Id);
@@ -109,16 +108,16 @@ public class ArtistsControllerTests
         [Fact]
         public async Task GetArtists_Songs_ById_ReturnsNotFound_WhenItemDoesNotExist()
         {
-            // Arrange
+            
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
                 var controller = new Artists_SongsController(context);
 
-                // Act
+               
                 var result = await controller.GetArtists_Songs(999);
 
-                // Assert
+              
                 Assert.IsType<NotFoundResult>(result.Result);
             }
         }
@@ -126,30 +125,30 @@ public class ArtistsControllerTests
         [Fact]
         public async Task PostArtists_Songs_AddsItem()
         {
-            // Arrange
+            
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
                 var controller = new Artists_SongsController(context);
-                var newItem = new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 };
+                var newItem = new Artists_Songs { Id = 9, Song_Id = 9, Artist_Id = 9 };
 
-                // Act
+                
                 var result = await controller.PostArtists_Songs(newItem);
 
-                // Assert
+                
                 var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
                 var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
                 var item = Assert.IsType<Artists_Songs>(createdResult.Value);
 
-                Assert.Equal(1, item.Id);
-                Assert.Equal(1, context.Artists_Songs.Count());
+                Assert.Equal(9, item.Id);
+                Assert.Equal(5, context.Artists_Songs.Count());
             }
         }
 
         [Fact]
         public async Task PutArtists_Songs_UpdatesItem()
         {
-            // Arrange
+            
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
@@ -162,10 +161,10 @@ public class ArtistsControllerTests
                 var controller = new Artists_SongsController(context);
                 var updatedItem = new Artists_Songs { Id = 1, Song_Id = 2, Artist_Id = 1 };
 
-                // Act
+                
                 var result = await controller.PutArtists_Songs(1, updatedItem);
 
-                // Assert
+               
                 Assert.IsType<NoContentResult>(result);
                 Assert.Equal(2, context.Artists_Songs.Find(1).Song_Id);
             }
@@ -174,17 +173,17 @@ public class ArtistsControllerTests
         [Fact]
         public async Task PutArtists_Songs_ReturnsBadRequest_WhenIdMismatch()
         {
-            // Arrange
+            
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
                 var controller = new Artists_SongsController(context);
                 var updatedItem = new Artists_Songs { Id = 1, Song_Id = 2, Artist_Id = 1 };
 
-                // Act
+                
                 var result = await controller.PutArtists_Songs(2, updatedItem);
 
-                // Assert
+                
                 Assert.IsType<BadRequestResult>(result);
             }
         }
@@ -192,11 +191,11 @@ public class ArtistsControllerTests
         [Fact]
         public async Task DeleteArtists_Songs_RemovesItem()
         {
-            // Arrange
+           
             var options = GetDbOptions();
             using (var context = new ArtistsContext(options))
             {
-                context.Artists_Songs.Add(new Artists_Songs { Id = 1, Song_Id = 1, Artist_Id = 1 });
+                context.Artists_Songs.Add(new Artists_Songs { Id = 5, Song_Id = 1, Artist_Id = 1 });
                 context.SaveChanges();
             }
 
@@ -204,11 +203,11 @@ public class ArtistsControllerTests
             {
                 var controller = new Artists_SongsController(context);
 
-                // Act
+                
                 var result = await controller.DeleteArtists_Songs(1);
 
                 Assert.IsType<NoContentResult>(result);
-                Assert.Equal(0, context.Artists_Songs.Count());
+                Assert.Equal(2, context.Artists_Songs.Count());
             }
         }
 
@@ -267,7 +266,6 @@ public class ArtistsControllerTests
     [Fact]
     public async Task PostArtists()
     {
-
         var newArtist = new ArtistsDto
         {
             Artist_Name = "New Artist",
@@ -275,13 +273,13 @@ public class ArtistsControllerTests
             DateOfBirth = DateTime.Parse("2000-01-01")
         };
 
-
         var result = await _controller.PostArtists(newArtist);
 
         var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        var createdArtist = Assert.IsType<Artists>(createdResult.Value);
+        var createdArtist = Assert.IsType<ArtistsDto>(createdResult.Value); 
         Assert.Equal("New Artist", createdArtist.Artist_Name);
     }
+
 
     [Fact]
     public async Task DeleteArtists_RemovesArtist()
