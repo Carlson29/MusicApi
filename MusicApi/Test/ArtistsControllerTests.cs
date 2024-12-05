@@ -1,8 +1,4 @@
-﻿using Moq;
-using Xunit;
-using Microsoft.EntityFrameworkCore;
-using MusicApi.Controllers;
-using MusicApi.Models;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,135 +8,108 @@ using MusicApi.Controllers;
 using MusicApi.Models;
 using Xunit;
 
-namespace MusicApi.Tests
+public class ArtistsControllerTests
 {
-    public class ArtistsControllerTests
+    private readonly ArtistsContext _context;
+    private readonly ArtistsController _controller;
+
+    public ArtistsControllerTests()
     {
-        private Mock<DbSet<Artists>> GetMockDbSet(IEnumerable<Artists> data)
+        var options = new DbContextOptionsBuilder<ArtistsContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) 
+            .Options;
+
+        _context = new ArtistsContext(options);
+        _controller = new ArtistsController(_context);
+
+        SeedDatabase();
+    }
+    private void SeedDatabase()
+    {
+        if (!_context.Artists.Any())
         {
-            var queryableData = data.AsQueryable();
-
-            var mockDbSet = new Mock<DbSet<Artists>>();
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.Provider).Returns(queryableData.Provider);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.Expression).Returns(queryableData.Expression);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.ElementType).Returns(queryableData.ElementType);
-            mockDbSet.As<IQueryable<Artists>>().Setup(m => m.GetEnumerator()).Returns(queryableData.GetEnumerator());
-
-            return mockDbSet;
+            _context.Artists.AddRange(
+                new Artists { Id = 1, Artist_Name = "Artist1", Bio = "Bio1", DateOfBirth = DateTime.Parse("1990-01-01") },
+                new Artists { Id = 2, Artist_Name = "Artist2", Bio = "Bio2", DateOfBirth = DateTime.Parse("1985-05-05") }
+            );
+            _context.SaveChanges();
         }
+    }
 
-        private Mock<ArtistsContext> GetMockContext(Mock<DbSet<Artists>> mockDbSet)
-        {
-            var mockContext = new Mock<ArtistsContext>();
-            mockContext.Setup(c => c.Artists).Returns(mockDbSet.Object);
-            return mockContext;
-        }
-
-      
-        public async Task GetArtists()
-        {
-            
-            var mockArtists = new List<Artists>
-            {
-                new Artists { Id = 1, Name = "Artist1" },
-                new Artists { Id = 2, Name = "Artist2" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
-
-            var controller = new ArtistsController(mockContext.Object);
-
-           
-            var result = await controller.GetArtists();
-
-            var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists>>>(result);
-            var returnValue = Assert.IsType<List<Artists>>(actionResult.Value);
-            Assert.Equal(2, returnValue.Count);
-        }
-
-      
-        public async Task GetArtists_InvalidId()
-        {
-
-            var mockArtists = new List<Artists>
-            {
-                new Artists { Id = 1, Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
-
-            var controller = new ArtistsController(mockContext.Object);
-
-            var result = await controller.GetArtists(2);
-
-            Assert.IsType<NotFoundResult>(result.Result);
-        }
-
-      
-        public async Task AddsNewArtist()
-        {
-            var mockArtists = new List<Artists>
-            {
-                new Artists { Id = 1, Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            mockDbSet.Setup(m => m.Add(It.IsAny<Artists>())).Callback<Artists>(a => mockArtists.Add(a));
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
-
-            var controller = new ArtistsController(mockContext.Object);
-            var newArtist = new Artists { Id = 2, Name = "Artist2" };
-
-            var result = await controller.PostArtists(newArtist);
-
-            var actionResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-            var createdArtist = Assert.IsType<Artists>(actionResult.Value);
-            Assert.Equal("Artist2", createdArtist.Name);
-            Assert.Equal(2, mockArtists.Count);
-        }
+    [Fact]
+    public async Task GetArtists_ReturnsResults()
+    {
+        
+        var result = await _controller.GetArtists();
 
        
-        public async Task DeleteArtists()
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returnValue = Assert.IsAssignableFrom<IEnumerable<ArtistsDto>>(okResult.Value);
+        Assert.Equal(2, returnValue.Count());
+    }
+
+    [Fact]
+    public async Task GetArtists_ById_WhenFound()
+    {
+        
+        var result = await _controller.GetArtists(1);
+
+        
+        var artistDto = Assert.IsType<ArtistsDto>(result.Value);
+        Assert.Equal("Xjj", artistDto.Artist_Name);
+    }
+
+    [Fact]
+    public async Task GetArtists_ById_WhenNotFound()
+    {
+      
+
+        var result = await _controller.GetArtists(999);
+
+        
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task PostArtists()
+    {
+        
+        var newArtist = new Artists
         {
-
-            var mockArtists = new List<Artists>
-            {
-                new Artists { Id = 1, Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            mockDbSet.Setup(m => m.FindAsync(It.IsAny<int>())).ReturnsAsync((object[] ids) => mockArtists.FirstOrDefault(a => a.Id == (int)ids[0]));
-            mockDbSet.Setup(m => m.Remove(It.IsAny<Artists>())).Callback<Artists>(a => mockArtists.Remove(a));
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
-
-            var controller = new ArtistsController(mockContext.Object);
-
-            var result = await controller.DeleteArtists(1);
-
-
-            Assert.IsType<NoContentResult>(result);
-            Assert.Empty(mockArtists);
-        }
+            Artist_Name = "New Artist",
+            Bio = "New Bio",
+            DateOfBirth = DateTime.Parse("2000-01-01")
+        };
 
        
-        public async Task PutArtists()
-        {
-            var mockArtists = new List<Artists>
-            {
-                new Artists { Id = 1, Name = "Artist1" }
-            };
-            var mockDbSet = GetMockDbSet(mockArtists);
-            var mockContext = GetMockContext(mockDbSet);
-            mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
+        var result = await _controller.PostArtists(newArtist);
 
-            var controller = new ArtistsController(mockContext.Object);
-            var updatedArtist = new Artists { Id = 1, Name = "UpdatedArtist" };
+       
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        var createdArtist = Assert.IsType<Artists>(createdResult.Value);
+        Assert.Equal("New Artist", createdArtist.Artist_Name);
+    }
 
-            var result = await controller.PutArtists(1, updatedArtist);
+    [Fact]
+    public async Task DeleteArtists_RemovesArtist()
+    {
+      
+        var result = await _controller.DeleteArtists(1);
 
+       
+        Assert.IsType<NoContentResult>(result);
 
-            Assert.IsType<NoContentResult>(result);
-            Assert.Equal("UpdatedArtist", mockArtists.First().Name);
-        }
+       
+        Assert.Null(await _context.Artists.FindAsync(1));
+    }
+
+    [Fact]
+    public async Task DeleteArtists_ReturnsNotFound_WhenArtistDoesNotExist()
+    {
+      
+        var result = await _controller.DeleteArtists(999);
+
+        
+        Assert.IsType<NotFoundResult>(result);
     }
 }
