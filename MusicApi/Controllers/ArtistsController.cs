@@ -125,5 +125,10 @@ namespace MusicApi.Controllers
         {
             return _context.Artists.Any(e => e.Id == id);
         }
+
+        internal Task PostArtists(Artists newArtist)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
