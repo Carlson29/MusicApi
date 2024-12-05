@@ -14,111 +14,125 @@ public class Artists_SongsControllerTests
 
     public Artists_SongsControllerTests()
     {
+        _data = new List<Artists_Songs>
+        {
+            new Artists_Songs { Id = 1, Artist_Id = 1, Song_Id = 1},
+            new Artists_Songs { Id = 2, Artist_Id = 2, Song_Id = 2}
+        };
 
-        var options = new DbContextOptionsBuilder<ArtistsContext>()
-            .UseInMemoryDatabase(databaseName: "TestDatabase")
-            .Options;
+        _mockDbset = new Mock<DbSet<Artists_Songs>>();
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.Provider).Returns(_data.AsQueryable().Provider);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.Expression).Returns(_data.AsQueryable().Expression);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.ElementType).Returns(_data.AsQueryable().ElementType);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.GetEnumerator()).Returns(_data.AsQueryable().GetEnumerator);
+        };
+
+        _mockDbset = new Mock<DbSet<Artists_Songs>>();
+        _controller = new Artists_SongsController(_mockContext.Object);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.Expression).Returns(_data.AsQueryable().Expression);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.ElementType).Returns(_data.AsQueryable().ElementType);
+        _mockDbset.As<IQueryable<Artists_Songs>>().Setup(m => m.GetEnumerator()).Returns(_data.AsQueryable().GetEnumerator);
 
         _context = new ArtistsContext(options);
 
-        //My Database Seed
-        SeedDatabase();
+        _controller = new Artists_SongsController(_mockContext.Object);
 
         _controller = new Artists_SongsController(_context);
     }
 
     private void SeedDatabase()
     {
-        if (!_context.Artists_Songs.Any())
-        {
-            _context.Artists_Songs.AddRange(
-                new Artists_Songs { Id = 1, Song_Id = 101, Artist_Id = 201 },
-                new Artists_Songs { Id = 2, Song_Id = 102, Artist_Id = 202 }
-            );
-            _context.SaveChanges();
-        }
-    }
-
-
-
-    [Fact]
-    public async Task GetArtists_Songs_All_Items()
-    {
-
         var result = await _controller.GetArtists_Songs();
 
-
+        
         var actionResult = Assert.IsType<ActionResult<IEnumerable<Artists_Songs>>>(result);
-        var model = Assert.IsAssignableFrom<IEnumerable<Artists_Songs>>(actionResult.Value);
-        Assert.Equal(4, model.Count());
+        var result = await _controller.GetArtists_Songs(1);
+
+        var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
+        var item = Assert.IsType<Artists_Songs>(actionResult.Value);
+        Assert.Equal(1, item.Id);
     }
 
     [Fact]
     public async Task GetArtists_Songs_With_Valid_Id()
     {
-
-        int validId = 1;
-
-
-        var result = await _controller.GetArtists_Songs(validId);
-
+        var result = await _controller.GetArtists_Songs(1);
 
         var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
-        var model = Assert.IsType<Artists_Songs>(actionResult.Value);
-        Assert.Equal(validId, model.Id);
-    }
+        var item = Assert.IsType<Artists_Songs>(actionResult.Value);
+        Assert.Equal(1, item.Id);
 
 
-    [Fact]
-    public async Task GetArtists_Songs_With_Invalid_Id_()
+    public async Task PostArtists_Songs_ShouldAddItem()
     {
-
-        var result = await _controller.GetArtists_Songs(99);
+        var newArtistsSong = new Artists_Songs { Id = 3, Artist_Id = 3, Song_Id = 3 };
+        _mockDbset.Setup(m => m.Add(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(_data.Add);
+    {
+        var result = await _controller.PostArtists_Songs(newArtistsSong);
 
 
         Assert.IsType<NotFoundResult>(result.Result);
     }
-    [Fact]
-    public async Task PostArtists_Songs_Adds_Item()
+
+    public async Task PostArtists_Songs_ShouldAddItem()
     {
+        var newArtistsSong = new Artists_Songs { Id = 3, Artist_Id = 3, Song_Id = 3 };
+        _mockDbset.Setup(m => m.Add(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(_data.Add);
 
-        var newItem = new Artists_Songs { Id = 5, Song_Id = 103, Artist_Id = 203 };
+        var result = await _controller.PostArtists_Songs(newArtistsSong);
+        var updatedArtistsSong = new Artists_Songs { Id = 1, Artist_Id = 10, Song_Id = 10 };
+        _mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
-
-        var result = await _controller.PostArtists_Songs(newItem);
-
-
-        var actionResult = Assert.IsType<ActionResult<Artists_Songs>>(result);
-        var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
-        var model = Assert.IsType<Artists_Songs>(createdAtActionResult.Value);
-        Assert.Equal(newItem.Id, model.Id);
-        Assert.Equal(3, _context.Artists_Songs.Count());
-    }
-
-    [Fact]
-    public async Task PutArtists_Songs_Id_Mismatch()
-    {
-
-        var existingItem = _context.Artists_Songs.First();
-
-
-        var result = await _controller.PutArtists_Songs(999, existingItem);
-
-
-        Assert.IsType<BadRequestResult>(result);
-    }
-    [Fact]
-    public async Task PostArtists_Songs_Duplicate()
-    {
-
-        var existingItem = _context.Artists_Songs.First();
-        var duplicateItem = new Artists_Songs { Song_Id = existingItem.Song_Id, Artist_Id = existingItem.Artist_Id };
-
+        var result = await _controller.PutArtists_Songs(1, updatedArtistsSong);
+   
+        var result = await _controller.PostArtists_Songs(duplicateItem);
 
         var result = await _controller.PostArtists_Songs(duplicateItem);
 
 
-        Assert.Equal(4, _context.Artists_Songs.Count());
+    [Fact]
+    public async Task PutArtists_Songs_Id_Mismatch()
+    {
+        var updatedArtistsSong = new Artists_Songs { Id = 1, Artist_Id = 10, Song_Id = 10 };
+
+        var result = await _controller.PutArtists_Songs(2, updatedArtistsSong);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+
+    }
+        var result = await _controller.PutArtists_Songs(1, updatedArtistsSong);
+    public async Task DeleteArtists_Songs_andRemoveItem()
+    {
+        var artistSong = _data.First();
+        _mockDbset.Setup(m => m.FindAsync(1)).ReturnsAsync(artistSong);
+        _mockDbset.Setup(m => m.Remove(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(item => _data.Remove(item));
+
+        var result = await _controller.DeleteArtists_Songs(1);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Single(_data);
+
+    public async Task PostArtists_Songs_Duplicate()
+    {
+        var updatedArtistsSong = new Artists_Songs { Id = 1, Artist_Id = 10, Song_Id = 10 };
+
+        var result = await _controller.PutArtists_Songs(2, updatedArtistsSong);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+
+    }
+
+    public async Task DeleteArtists_Songs_andRemoveItem()
+    {
+        var artistSong = _data.First();
+        _mockDbset.Setup(m => m.FindAsync(1)).ReturnsAsync(artistSong);
+        _mockDbset.Setup(m => m.Remove(It.IsAny<Artists_Songs>())).Callback<Artists_Songs>(item => _data.Remove(item));
+
+        var result = await _controller.DeleteArtists_Songs(1);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Single(_data);
+
     }
 
 

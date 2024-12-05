@@ -65,14 +65,12 @@ namespace MusicApi.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> PutArtists(int id, Artists artists)
+        public async Task<IActionResult> PutArtists(int id, ArtistsDto artists)
         {
-            if (id != artists.Id)
-            {
-                return BadRequest();
-            }
+            var artist = new Artists { Id = id, Artist_Name = artists.Artist_Name, Bio = artists.Bio, DateOfBirth = artists.DateOfBirth };
+            
 
-            _context.Entry(artists).State = EntityState.Modified;
+            _context.Entry(artist).State = EntityState.Modified;
 
             try
             {
@@ -97,12 +95,13 @@ namespace MusicApi.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<Artists>> PostArtists(Artists artists)
+        public async Task<ActionResult<Artists>> PostArtists(ArtistsDto artists)
         {
-            _context.Artists.Add(artists);
+            var artist = new Artists { Id = 0, Artist_Name = artists.Artist_Name, Bio = artists.Bio, DateOfBirth = artists.DateOfBirth };
+            _context.Artists.Add(artist);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetArtists", new { id = artists.Id }, artists);
+            return CreatedAtAction("GetArtists", new { id = artist.Id }, artists);
         }
 
         // DELETE: api/Artists/5

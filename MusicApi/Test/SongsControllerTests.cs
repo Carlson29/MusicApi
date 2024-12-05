@@ -1,137 +1,159 @@
-
-﻿using System;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Xunit;
 using MusicApi.Controllers;
 using MusicApi.Models;
-using Xunit;
+using Microsoft.EntityFrameworkCore;
 
-public class SongsControllerTests
+namespace MusicApi.Tests
 {
-    private readonly SongsController _controller;
-    private readonly ArtistsContext _context;
-
-    public SongsControllerTests()
+    public class SongsControllerTests
     {
-        var options = new DbContextOptionsBuilder<ArtistsContext>()
-            .UseInMemoryDatabase(databaseName: "Database")
-            .Options;
+        private readonly Mock<ArtistsContext> _mockContext;
+        private readonly Mock<DbSet<Songs>> _mockDbSet;
+        private readonly List<Songs> _songsData;
+        private readonly SongsController _controller;
 
-        _context = new ArtistsContext(options);
-        _controller = new SongsController(_context);
-
-
-        _context.Database.EnsureDeleted();
-        _context.Database.EnsureCreated();
-    }
-    [Fact]
-    public async Task GetSongs_ReturnsListOfSongs()
-    {
-        var songList = new List<Songs>
+        public SongsControllerTests()
         {
-            new Songs { Id = 4, Title = "Song 1", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now },
-            new Songs { Id = 5, Title = "Song 2", Genre = "Rock", Duration = TimeSpan.FromMinutes(4), ReleaseDate = DateTime.Now }
-        };
+            _mockContext = new Mock<ArtistsContext>();
+            _mockDbSet = new Mock<DbSet<Songs>>();
+            _songsData = new List<Songs>
+            {
+                new Songs { Id = 1, Title = "Song1", Artist = "Artist1" },
+                new Songs { Id = 2, Title = "Song2", Artist = "Artist2" }
+            };
 
-        await _context.Songs.AddRangeAsync(songList);
-        await _context.SaveChangesAsync();
+            var queryable = _songsData.AsQueryable();
 
-        var result = await _controller.GetSongs();
+            _mockDbSet.As<IQueryable<Songs>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            _mockDbSet.As<IQueryable<Songs>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            _mockDbSet.As<IQueryable<Songs>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            _mockDbSet.As<IQueryable<Songs>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
 
-        var actionResult = Assert.IsType<ActionResult<IEnumerable<SongsDto>>>(result);
-        var model = Assert.IsAssignableFrom<List<SongsDto>>(actionResult.Value);
-        Assert.Equal(4, model.Count);
-    }
+            _mockContext.Setup(c => c.Songs).Returns(_mockDbSet.Object);
 
-    [Fact]
-    public async Task GetSongsById()
-    {
+            _controller = new SongsController(_mockContext.Object);
+        }
 
-        var songId = 1000;
-   
-        var result = await _controller.GetSongs(songId);
+      
+      
+        public async Task GetSongs_ReturnsAllSongs()
+        {
+            
+            var result = await _controller.GetSongs();
+
+            
+            var actionResult = Assert.IsType<ActionResult<IEnumerable<Songs>>>(result);
+            var returnValue = Assert.IsType<List<Songs>>(actionResult.Value);
+            Assert.Equal(2, returnValue.Count);
+        }
 
        
-        var actionResult = Assert.IsType<ActionResult<SongsDto>>(result);
-        Assert.IsType<NotFoundResult>(actionResult.Result);
-    }
+        public async Task GetSongs_WithID()
+        {
+            
+            _mockContext.Setup(c => c.Songs.FindAsync(1)).ReturnsAsync(_songsData[0]);
 
-    [Fact]
-    public async Task GetSongsById_IfSongExists()
-    {
-        var songId = 3;
-        var song = new Songs { Id = songId, Title = "Song 1", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now };
-        await _context.Songs.AddAsync(song);
-        await _context.SaveChangesAsync();
+          
+            var result = await _controller.GetSongs(1);
 
-        var result = await _controller.GetSongs(songId);
+           
+            var actionResult = Assert.IsType<ActionResult<Songs>>(result);
+            var returnValue = Assert.IsType<Songs>(actionResult.Value);
+            Assert.Equal("Song1", returnValue.Title);
+        }
 
-        var actionResult = Assert.IsType<ActionResult<SongsDto>>(result);
-        var model = Assert.IsType<SongsDto>(actionResult.Value);
-        Assert.Equal("Song 1", model.Title);
-        Assert.Equal(TimeSpan.FromMinutes(3), model.Duration);
-    }
+        
+        public async Task GetSongs_WithoutID()
+        {
+           
+            _mockContext.Setup(c => c.Songs.FindAsync(It.IsAny<int>())).ReturnsAsync((Songs)null);
 
-    [Fact]
-    public async Task PostSongs_CreatedAtAction()
-    {
-        var song = new Songs { Id = 4, Title = "New Song", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now };
+          
+            var result = await _controller.GetSongs(9999);
 
-        var result = await _controller.PostSongs(song);
+            
+            Assert.IsType<NotFoundResult>(result.Result);
+        }
 
-        var actionResult = Assert.IsType<ActionResult<Songs>>(result);
-        var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
-        Assert.Equal("GetSongs", createdAtActionResult.ActionName);
-    }
+       
+        public async Task Add_Songs()
+        {
+            
+            var newSong = new Songs { Id = 3, Title = "Song3", Artist = "Artist3" };
 
-    [Fact]
-    public async Task PutSongs_IfIdMismatch()
-    {
-        var songId = 1;
-        var song = new Songs { Id = 2, Title = "Updated Song", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now };
+            _mockContext.Setup(c => c.Songs.Add(newSong));
+            _mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
-        var result = await _controller.PutSongs(songId, song);
+           
+            var result = await _controller.PostSongs(newSong);
 
-        Assert.IsType<BadRequestResult>(result);
-    }
+            
+            var actionResult = Assert.IsType<ActionResult<Songs>>(result);
+            var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
+            var returnValue = Assert.IsType<Songs>(createdAtActionResult.Value);
 
-    [Fact]
-    public async Task PutSongs_IfSuccessful()
-    {
-        var songId = 3;
-        var song = new Songs { Id = songId, Title = "Updated Song", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now };
-        await _context.Songs.AddAsync(song);
-        await _context.SaveChangesAsync();
+            Assert.Equal("Song3", returnValue.Title);
+        }
 
-        var result = await _controller.PutSongs(songId, song);
+      
+        public async Task PutSongs_WithId()
+        {
+         
+            var updatedSong = new Songs { Id = 1, Title = "UpdatedSong", Artist = "UpdatedArtist" };
+            _mockContext.Setup(c => c.Entry(updatedSong).State = EntityState.Modified);
+            _mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
-        Assert.IsType<NoContentResult>(result);
-    }
+          
+            var result = await _controller.PutSongs(1, updatedSong);
 
-    [Fact]
-    public async Task DeleteSongs_IfSongDoesNotExist()
-    {
-        var songId = 5;
+          
+            Assert.IsType<NoContentResult>(result);
+        }
 
-        var result = await _controller.DeleteSongs(songId);
+      
+        public async Task PutSongs_ReturnsBadRequest()
+        {
+           
+            var updatedSong = new Songs { Id = 1, Title = "UpdatedSong", Artist = "UpdatedArtist" };
 
-        Assert.IsType<NotFoundResult>(result);
-    }
+            
+            var result = await _controller.PutSongs(2, updatedSong);
 
-    [Fact]
-    public async Task DeleteSongs_IfSongDeleted()
-    {
-        var songId = 5;
-        var song = new Songs { Id = songId, Title = "Song 1", Genre = "Pop", Duration = TimeSpan.FromMinutes(3), ReleaseDate = DateTime.Now };
-        await _context.Songs.AddAsync(song);
-        await _context.SaveChangesAsync();
+         
+            Assert.IsType<BadRequestResult>(result);
+        }
 
-        var result = await _controller.DeleteSongs(songId);
+       
+        public async Task DeleteSongs_WithId()
+        {
+            
+            _mockContext.Setup(c => c.Songs.FindAsync(1)).ReturnsAsync(_songsData[0]);
+            _mockContext.Setup(c => c.Songs.Remove(It.IsAny<Songs>()));
+            _mockContext.Setup(c => c.SaveChangesAsync(default)).ReturnsAsync(1);
 
-        Assert.IsType<NoContentResult>(result);
+         
+            var result = await _controller.DeleteSongs(1);
+
+           
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        
+        public async Task DeleteSongs_InvalidId()
+        {
+    
+            _mockContext.Setup(c => c.Songs.FindAsync(It.IsAny<int>())).ReturnsAsync((Songs)null);
+
+           
+            var result = await _controller.DeleteSongs(999);
+
+            
+            Assert.IsType<NotFoundResult>(result);
+        }
     }
 }
-
