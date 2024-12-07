@@ -1,90 +1,63 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using MusicApi.Controllers;
 using MusicApi.Models;
 using MusicApi.Service;
 using Xunit;
 
-namespace MusicApi.Tests
+public class UsersControllerTests
 {
-    public class UsersControllerTests
+    [Fact]
+    public async Task Login_ValidCredentials()
     {
-        private readonly DbContextOptions<ArtistsContext> _dbContextOptions;
-        private readonly Mock<JwtService> _jwtServiceMock;
-        private readonly ArtistsContext _context;
-        private readonly UsersController _controller;
-
-
-
-        public UsersControllerTests()
+        // Arrange
+        var mockJwtService = new Mock<JwtService>();
+        var mockContext = new Mock<ArtistsContext>();
+        var userDto = new UserDto { User_Name = "testuser", Password = "testpassword" };
+        var expectedResponse = new LoginResponseModel
         {
-            // Setup in-memory database options
-            _dbContextOptions = new DbContextOptionsBuilder<ArtistsContext>()
-                .UseInMemoryDatabase(databaseName: "TestDatabase")
-                .Options;
+            UserName = "testuser",
+            AccessToken = "valid_access",
+            ExpiresIn = 3600 
+        };
 
-            // Create the in-memory context
-            _context = new ArtistsContext(_dbContextOptions);
+        mockJwtService
+            .Setup(service => service.Authenticate(It.Is<UserDto>(u => u.User_Name == userDto.User_Name && u.Password == userDto.Password)))
+            .ReturnsAsync(expectedResponse);
 
-            // Mock JwtService (specific methods)
-            _jwtServiceMock = new Mock<JwtService>(MockBehavior.Strict, null);
-            _controller = new UsersController(_context, _jwtServiceMock.Object);
-        }
+        var controller = new UsersController(mockContext.Object, mockJwtService.Object);
 
-        [Fact]
-        public async Task Login_ValidCredentials_ReturnsOkWithResponse()
-        {
-            // Arrange
-            var request = new UserDto
-            {
-                User_Name = "validUser",
-                Password = "validPassword"
-            };
+        var result = await controller.Login(userDto);
 
-            var responseModel = new LoginResponseModel
-            {
-                UserName = "validUser",
-                AccessToken = "someAccessToken",
-                ExpiresIn = 3600
-            };
+        var actionResult = Assert.IsType<ActionResult<LoginResponseModel>>(result);
+        var okResult = Assert.IsType<LoginResponseModel>(actionResult.Value);
 
-            _jwtServiceMock
-                .Setup(x => x.Authenticate(request))
-                .ReturnsAsync(responseModel);
+        Assert.Equal(expectedResponse.UserName, okResult.UserName);
+        Assert.Equal(expectedResponse.AccessToken, okResult.AccessToken);
+        Assert.Equal(expectedResponse.ExpiresIn, okResult.ExpiresIn);
 
-            // Act
-            var result = await _controller.Login(request);
+        mockJwtService.Verify(service => service.Authenticate(It.IsAny<UserDto>()), Times.Once);
+    }
 
-            // Assert
-            var actionResult = Assert.IsType<ActionResult<LoginResponseModel>>(result);
-            var okResult = Assert.IsType<LoginResponseModel>(actionResult.Value);
-            Assert.Equal(responseModel.UserName, okResult.UserName);
-            Assert.Equal(responseModel.AccessToken, okResult.AccessToken);
-            Assert.Equal(responseModel.ExpiresIn, okResult.ExpiresIn);
-        }
+    [Fact]
+    public async Task Login_InvalidCredentials()
+    {
+        var mockJwtService = new Mock<JwtService>();
+        var mockContext = new Mock<ArtistsContext>();
+        var userDto = new UserDto { User_Name = "wronguser", Password = "wrongpassword" };
 
-        [Fact]
-        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
-        {
-            // Arrange
-            var request = new UserDto
-            {
-                User_Name = "invalidUser",
-                Password = "invalidPassword"
-            };
+        mockJwtService
+            .Setup(service => service.Authenticate(It.IsAny<UserDto>()))
+            .ReturnsAsync((LoginResponseModel)null);
 
-            _jwtServiceMock
-                .Setup(x => x.Authenticate(request))
-                .ReturnsAsync((LoginResponseModel)null);
+        var controller = new UsersController(mockContext.Object, mockJwtService.Object);
 
-            // Act
-            var result = await _controller.Login(request);
+        var result = await controller.Login(userDto);
 
-            // Assert
-            var actionResult = Assert.IsType<ActionResult<LoginResponseModel>>(result);
-            Assert.IsType<UnauthorizedResult>(actionResult.Result);
-        }
+        var actionResult = Assert.IsType<ActionResult<LoginResponseModel>>(result);
+        Assert.IsType<UnauthorizedResult>(actionResult.Result);
+
+        mockJwtService.Verify(service => service.Authenticate(It.IsAny<UserDto>()), Times.Once);
     }
 }
