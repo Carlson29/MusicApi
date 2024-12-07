@@ -130,5 +130,21 @@ namespace MusicApi.Controllers
         {
             throw new NotImplementedException();
         }
+
+        [HttpGet("Artists/{id}")]
+        public async Task<ActionResult<Artists>> GetArtistsWithId(int id)
+        {
+            var artists = await _context.Artists.FindAsync(id);
+
+            if (artists == null)
+            {
+                return NotFound();
+            }
+
+
+            return artists;
+        }
+
+
     }
 }

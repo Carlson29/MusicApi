@@ -129,5 +129,14 @@ namespace MusicApi.Controllers
         {
             return _context.Songs.Any(e => e.Id == id);
         }
+
+        [HttpGet("Song")]
+        // [Authorize]
+        public async Task<ActionResult<IEnumerable<Songs>>> GetSongs2()
+        {
+            var songs = await _context.Songs.ToListAsync();
+
+            return songs;
+        }
     }
 }

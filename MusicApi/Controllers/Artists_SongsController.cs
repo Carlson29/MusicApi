@@ -103,5 +103,20 @@ namespace MusicApi.Controllers
         {
             return _context.Artists_Songs.Any(e => e.Id == id);
         }
+
+        [HttpGet("Artists_Songs/{id}")]
+        public async Task<ActionResult<IEnumerable<Artists_Songs>>> GetArtists_SongsBySongId(int id)
+        {
+            var artists_Songs = await _context.Artists_Songs.Where(x => x.Song_Id == id).ToListAsync();
+
+            if (artists_Songs == null)
+            {
+                return NotFound();
+            }
+
+            return artists_Songs;
+        }
+
+
     }
 }
